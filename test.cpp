@@ -26,6 +26,9 @@ int main()
 	std::cout << connection::echo(db, "hello") << "\n";
 	for(int i = 0; i < 10; ++i)
 		std::cout << connection::ping(db) << "\n";
+
+	std::cout << "get(foo)   : " << string::get(db, "foo") << "\n";
+	std::cout << "get(foofoo): " << string::get(db, "foofoo") << "\n"; // nil
 	
 	key::expire(db, "foo", 1);
 

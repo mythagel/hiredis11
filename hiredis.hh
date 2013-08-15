@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <boost/optional.hpp>
 
 namespace hiredis
 {
@@ -278,6 +279,14 @@ namespace string
 
 //GET key
 //Get the value of a key
+template<typename Key>
+auto get(context& c, Key key) -> boost::optional<std::string>
+{
+	auto value = c.command({"GET", key});
+	if(reply::is_nill(value))
+		return {};
+	return {true, reply::string{value}};
+}
 
 //GETBIT key offset
 //Returns the bit value at offset in the string value stored at key
