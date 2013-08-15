@@ -166,6 +166,66 @@ public:
 	
 		return { static_cast<redisReply*>(res), freeReplyObject };
 	}
+	
+	void append_command(const std::vector<std::string>& args)
+	{
+		auto argc = args.size();
+		std::vector<const char*> argv(argc);
+		std::vector<size_t> argvlen(argc);
+		std::transform(begin(args), end(args), begin(argv), [](const std::string& s) -> const char* { return s.c_str(); });
+		std::transform(begin(args), end(args), begin(argvlen), [](const std::string& s) -> size_t { return s.size(); });
+	
+		redisAppendCommandArgv(c.get(), argc, argv.data(), argvlen.data());
+		if(c->err)
+			critical_error();
+	}
+	
+	auto get_reply() -> reply::reply_t
+	{
+		void* reply;
+		
+		int res = redisGetReply(c.get(), &reply);
+		if(res == REDIS_ERR)
+			critical_error();
+		
+		return { static_cast<redisReply*>(reply), freeReplyObject };
+	}
+};
+
+class pipeline
+{
+private:
+	context& c;
+	std::size_t commands;
+public:
+	pipeline(context& c)
+	 : c(c), commands(0)
+	{
+	}
+	
+	auto command(const std::vector<std::string>& args) -> void
+	{
+		c.append_command(args);
+		++commands;
+	}
+	auto execute() -> std::vector<reply::reply_t>
+	{
+		std::vector<reply::reply_t> replies(commands);
+		std::generate_n(begin(replies), commands, [this]() -> reply::reply_t { return c.get_reply(); });
+		commands = 0;
+		return replies;
+	}
+	
+	~pipeline()
+	{
+		try
+		{
+			execute();
+		}
+		catch(...)
+		{
+		}
+	}
 };
 
 namespace key
@@ -610,29 +670,50 @@ namespace ordered_set
 
 namespace pubsub
 {
-//PSUBSCRIBE pattern [pattern ...]
-//Listen for messages published to channels matching the given patterns
+
+// Listen for messages published to channels matching the given patterns
+template<typename Pattern, typename... Patterns>
+void psubscribe(context& c, Pattern pattern, Patterns... patterns)
+{
+	c.command({"PSUBSCRIBE", pattern, patterns...});
+}
 
 //PUBSUB subcommand [argument [argument ...]]
 //Inspect the state of the Pub/Sub subsystem
 
-//PUBLISH channel message
-//Post a message to a channel
+// Post a message to a channel
+template<typename Channel, typename Message>
+auto publish(context& c, Channel channel, Message message) -> long long
+{
+	return reply::integer{c.command({"PUBLISH", channel, message})};
+}
 
-//PUNSUBSCRIBE [pattern [pattern ...]]
-//Stop listening for messages posted to channels matching the given patterns
+// Stop listening for messages posted to channels matching the given patterns
+template<typename... Patterns>
+void punsubscribe(context& c, Patterns... patterns)
+{
+	c.command({"PUNSUBSCRIBE", patterns...});
+}
 
-//SUBSCRIBE channel [channel ...]
-//Listen for messages published to the given channels
+// Listen for messages published to the given channels
+template<typename Channel, typename... Channels>
+void subscribe(context& c, Channel channel, Channels... channels)
+{
+	c.command({"SUBSCRIBE", channel, channels...});
+}
 
-//UNSUBSCRIBE [channel [channel ...]]
-//Stop listening for messages posted to the given channels
+// Stop listening for messages posted to the given channels
+template<typename... Channels>
+void unsubscribe(context& c, Channels... channels)
+{
+	c.command({"UNSUBSCRIBE", channels...});
+}
 }
 
 namespace transaction
 {
-//DISCARD
-//Discard all commands issued after MULTI
+
+// Discard all commands issued after MULTI
 auto discard(context& c) -> std::string
 {
 	return reply::status{c.command({"DISCARD"})};
@@ -642,22 +723,19 @@ auto discard(context& c) -> std::string
 //Execute all commands issued after MULTI
 // TODO array reply
 
-//MULTI
-//Mark the start of a transaction block
+// Mark the start of a transaction block
 auto multi(context& c) -> std::string
 {
 	return reply::status{c.command({"MULTI"})};
 }
 
-//UNWATCH
-//Forget about all watched keys
+// Forget about all watched keys
 auto unwatch(context& c) -> std::string
 {
 	return reply::status{c.command({"UNWATCH"})};
 }
 
-//WATCH key [key ...]
-//Watch the given keys to determine execution of the MULTI/EXEC block
+// Watch the given keys to determine execution of the MULTI/EXEC block
 template<typename Key, typename... Keys>
 auto watch(context& c, Key key, Keys... keys) -> std::string
 {
@@ -689,36 +767,32 @@ namespace script
 
 namespace connection
 {
-//AUTH password
-//Authenticate to the server
+
+// Authenticate to the server
 auto auth(context& c, const std::string& password) -> std::string
 {
 	return reply::status{c.command({"AUTH", password})};
 }
 
-//ECHO message
-//Echo the given string
+// Echo the given string
 auto echo(context& c, const std::string& message) -> std::string
 {
 	return reply::string{c.command({"ECHO", message})};
 }
 
-//PING
-//Ping the server
+// Ping the server
 auto ping(context& c) -> std::string
 {
 	return reply::status{c.command({"PING"})};
 }
 
-//QUIT
-//Close the connection
+// Close the connection
 auto quit(context& c) -> std::string
 {
 	return reply::status{c.command({"QUIT"})};
 }
 
-//SELECT index
-//Change the selected database for the current connection
+// Change the selected database for the current connection
 auto select(context& c, int index) -> std::string
 {
 	return reply::status{c.command({"SELECT", std::to_string(index)})};
@@ -728,24 +802,53 @@ auto select(context& c, int index) -> std::string
 
 namespace server
 {
-//BGREWRITEAOF
-//Asynchronously rewrite the append-only file
 
-//BGSAVE
-//Asynchronously save the dataset to disk
+// Asynchronously rewrite the append-only file
+auto bg_rewrite_aof(context& c) -> std::string
+{
+	return reply::status{c.command({"BGREWRITEAOF"})};
+}
 
-//CLIENT KILL ip:port
-//Kill the connection of a client
+// Asynchronously save the dataset to disk
+auto bg_save(context& c) -> std::string
+{
+	return reply::status{c.command({"BGSAVE"})};
+}
 
-//CLIENT LIST
-//Get the list of client connections
+namespace client
+{
 
-//CLIENT GETNAME
-//Get the current connection name
+// Kill the connection of a client
+auto kill(context& c, const std::string& address) -> std::string
+{
+	return reply::status{c.command({"CLIENT", "KILL", address})};
+}
 
-//CLIENT SETNAME connection-name
-//Set the current connection name
+// Get the list of client connections
+auto list(context& c) -> std::string
+{
+	return reply::string{c.command({"CLIENT", "LIST"})};
+}
 
+// Get the current connection name
+auto get_name(context& c) -> boost::optional<std::string>
+{
+	auto value = c.command({"CLIENT", "GETNAME"});
+	if(reply::is_nill(value))
+		return {};
+	return {true, reply::string{value}};
+}
+
+// Set the current connection name
+auto set_name(context& c, const std::string& name) -> std::string
+{
+	return reply::status{c.command({"CLIENT", "SETNAME", name})};
+}
+
+}
+
+namespace config
+{
 //CONFIG GET parameter
 //Get the value of a configuration parameter
 
@@ -757,9 +860,13 @@ namespace server
 
 //CONFIG RESETSTAT
 //Reset the stats returned by INFO
+}
 
-//DBSIZE
-//Return the number of keys in the selected database
+// Return the number of keys in the selected database
+auto dbsize(context& c) -> long long
+{
+	return reply::integer{c.command({"DBSIZE"})};
+}
 
 //DEBUG OBJECT key
 //Get debugging information about a key
@@ -767,23 +874,42 @@ namespace server
 //DEBUG SEGFAULT
 //Make the server crash
 
-//FLUSHALL
-//Remove all keys from all databases
+// Remove all keys from all databases
+auto flush_all(context& c) -> std::string
+{
+	return reply::status{c.command({"FLUSHALL"})};
+}
 
-//FLUSHDB
-//Remove all keys from the current database
+// Remove all keys from the current database
+auto flush_db(context& c) -> std::string
+{
+	return reply::status{c.command({"FLUSHDB"})};
+}
 
-//INFO [section]
-//Get information and statistics about the server
+// Get information and statistics about the server
+auto info(context& c) -> std::string
+{
+	return reply::string{c.command({"INFO"})};
+}
+auto info(context& c, const std::string& section) -> std::string
+{
+	return reply::string{c.command({"INFO", section})};
+}
 
-//LASTSAVE
-//Get the UNIX time stamp of the last successful save to disk
+// Get the UNIX time stamp of the last successful save to disk
+auto last_save(context& c, const std::string& section) -> time_t
+{
+	return reply::integer{c.command({"LASTSAVE", section})};
+}
 
 //MONITOR
 //Listen for all requests received by the server in real time
 
-//SAVE
-//Synchronously save the dataset to disk
+// Synchronously save the dataset to disk
+auto save(context& c) -> std::string
+{
+	return reply::status{c.command({"SAVE"})};
+}
 
 //SHUTDOWN [NOSAVE] [SAVE]
 //Synchronously save the dataset to disk and then shut down the server

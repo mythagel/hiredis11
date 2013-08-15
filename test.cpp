@@ -12,18 +12,20 @@ int main()
 	reply::status res = db.command({"SET", "foo", std::string(100, '*')});
 	std::cout << "res: " << res.value << "\n";
 	
-	db.command({"SET", "a", "1"});
-	db.command({"SET", "b", "1"});
-	db.command({"SET", "c", "1"});
-	db.command({"SET", "d", "1"});
-	db.command({"SET", "e", "1"});
-	db.command({"SET", "f", "1"});
-	db.command({"SET", "g", "1"});
-	
 	// With results
 	reply::string foo = db.command({"GET", "foo"});
 	std::cout << foo.value << "\n";
 
+	pipeline p(db);
+	p.command({"SET", "a", "1"});
+	p.command({"SET", "b", "1"});
+	p.command({"SET", "c", "1"});
+	p.command({"SET", "d", "1"});
+	p.command({"SET", "e", "1"});
+	p.command({"SET", "f", "1"});
+	p.command({"SET", "g", "1"});
+	auto replies = p.execute();
+	std::cout << "replies.size(): " << replies.size() << "\n";
 
 	// 2. One step higher - wrapped functions
 	
