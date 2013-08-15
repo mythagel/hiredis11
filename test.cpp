@@ -5,7 +5,8 @@ int main()
 {
 	using namespace hiredis;
 
-	auto db = context{"localhost", 6379};
+	auto c = std::make_shared<context>("localhost", 6379);
+	auto& db = *c;
 
 	// 1. Basic API
 	db.command({"GET", "foo"});

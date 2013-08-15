@@ -1031,10 +1031,10 @@ class unordered_set
 {
 private:
 	std::string key;
-	context* c;
+	std::shared_ptr<context> c;
 public:
-	unordered_set(const std::string& key)
-	 : key(key)
+	unordered_set(std::shared_ptr<context> c, const std::string& key)
+	 : c(c), key(key)
 	{
 	}
 	
@@ -1047,6 +1047,15 @@ public:
 		return set::card(*c, key);
 	}
 	
+	bool insert(T value)
+	{
+		return set::add(*c, key, value);
+	}
+	
+	bool exists(T value)
+	{
+		return set::is_member(*c, key, value);
+	}
 };
 
 }
