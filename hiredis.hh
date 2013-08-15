@@ -624,11 +624,20 @@ namespace list
 
 namespace set
 {
-//SADD key member [member ...]
-//Add one or more members to a set
 
-//SCARD key
-//Get the number of members in a set
+// Add one or more members to a set
+template<typename Key, typename Member, typename... Members>
+auto add(context& c, Key key, Member member, Members... members) -> long long
+{
+	return reply::integer{c.command({"SADD", key, member, members...})};
+}
+
+// Get the number of members in a set
+template<typename Key>
+auto card(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"SCARD", key})};
+}
 
 //SDIFF key [key ...]
 //Subtract multiple sets
@@ -642,8 +651,12 @@ namespace set
 //SINTERSTORE destination key [key ...]
 //Intersect multiple sets and store the resulting set in a key
 
-//SISMEMBER key member
-//Determine if a given value is a member of a set
+// Determine if a given value is a member of a set
+template<typename Key, typename Member>
+auto is_member(context& c, Key key, Member member) -> bool
+{
+	return reply::integer{c.command({"SISMEMBER", key, member})};
+}
 
 //SMEMBERS key
 //Get all the members in a set
@@ -651,14 +664,22 @@ namespace set
 //SMOVE source destination member
 //Move a member from one set to another
 
-//SPOP key
-//Remove and return a random member from a set
+// Remove and return a random member from a set
+template<typename Key>
+auto pop(context& c, Key key) -> std::string
+{
+	return reply::string{c.command({"SPOP", key})};
+}
 
 //SRANDMEMBER key [count]
 //Get one or multiple random members from a set
 
-//SREM key member [member ...]
-//Remove one or more members from a set
+// Remove one or more members from a set
+template<typename Key, typename Member, typename... Members>
+auto rem(context& c, Key key, Member member, Members... members) -> long long
+{
+	return reply::integer{c.command({"SREM", key, member, members...})};
+}
 
 //SUNION key [key ...]
 //Add multiple sets
@@ -667,7 +688,7 @@ namespace set
 //Add multiple sets and store the resulting set in a key
 }
 
-namespace ordered_set
+namespace sorted_set
 {
 //ZADD key score member [score member ...]
 //Add one or more members to a sorted set, or update its score if it already exists

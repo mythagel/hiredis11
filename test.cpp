@@ -33,6 +33,8 @@ int main()
 	
 	connection::select(db, 0);
 	
+	std::cout << server::client::list(db) << "\n";
+	
 	std::cout << connection::echo(db, "hello") << "\n";
 	for(int i = 0; i < 10; ++i)
 		std::cout << connection::ping(db) << "\n";
