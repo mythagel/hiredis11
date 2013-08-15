@@ -89,7 +89,7 @@ struct string
 {
 	std::string value;
 	
-	string(const reply_t& reply)
+	string(reply_t reply)
 	{
 		if(reply->type == REDIS_REPLY_STRING)
 			value = {reply->str, static_cast<size_t>(reply->len)};
@@ -107,7 +107,7 @@ struct integer
 {
 	long long value;
 	
-	integer(const reply_t& reply)
+	integer(reply_t reply)
 	{
 		if(reply->type == REDIS_REPLY_INTEGER)
 			value = reply->integer;
@@ -125,7 +125,7 @@ struct status
 {
 	std::string value;
 	
-	status(const reply_t& reply)
+	status(reply_t reply)
 	{
 		if(reply->type == REDIS_REPLY_STATUS || reply->type == REDIS_REPLY_ERROR)
 			value = {reply->str, static_cast<size_t>(reply->len)};
@@ -143,7 +143,7 @@ struct status
 };
 
 // TODO how to cleanly represent REDIS_REPLY_ARRAY?
-bool is_nill(const reply_t& reply)
+bool is_nill(reply_t reply)
 {
 	return reply->type == REDIS_REPLY_NIL;
 }
