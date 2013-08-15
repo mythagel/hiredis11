@@ -7,6 +7,8 @@
 #include <string>
 #include <algorithm>
 #include <boost/optional.hpp>
+#include <ctime>
+#include <chrono>
 
 namespace hiredis
 {
@@ -143,7 +145,22 @@ struct status
 	}
 };
 
-// TODO how to cleanly represent REDIS_REPLY_ARRAY?
+struct array
+{
+	std::vector<reply_t> elements;
+	
+	array(reply_t reply)
+	{
+		if(reply->type == REDIS_REPLY_ARRAY)
+		{
+			elements.resize(reply->elements);
+			std::transform(reply->element, reply->element + reply->elements, begin(elements), [&reply](redisReply* r) -> reply_t { return {reply, r}; });
+		}
+		else
+			throw std::invalid_argument("reply type not array.");
+	}
+};
+
 bool is_nill(reply_t reply)
 {
 	return reply->type == REDIS_REPLY_NIL;
@@ -154,43 +171,51 @@ bool is_nill(reply_t reply)
 namespace key
 {
 
-//DEL key [key ...]
-//Delete a key
+// Delete a key
 template<typename Key, typename... Keys>
 auto del(context& c, Key key, Keys... keys) -> long long
 {
 	return reply::integer{c.command({"DEL", key, keys...})};
 }
 
-//DUMP key
-//Return a serialized version of the value stored at the specified key.
+// Return a serialized version of the value stored at the specified key.
 template<typename Key>
 auto dump(context& c, Key key) -> std::string
 {
 	return reply::string{c.command({"DUMP", key})};
 }
 
-//EXISTS key
-//Determine if a key exists
+// Determine if a key exists
 template<typename Key>
 auto exists(context& c, Key key) -> bool
 {
 	return reply::integer{c.command({"EXISTS", key})};
 }
 
-//EXPIRE key seconds
-//Set a key's time to live in seconds
+// Set a key's time to live in seconds
 template<typename Key>
-auto expire(context& c, Key key, int ttl) -> bool
+auto expire(context& c, Key key, std::chrono::seconds ttl) -> bool
 {
-	return reply::integer{c.command({"EXPIRE", key, std::to_string(ttl)})};
+	return reply::integer{c.command({"EXPIRE", key, std::to_string(ttl.count())})};
 }
 
-//EXPIREAT key timestamp
-//Set the expiration for a key as a UNIX timestamp
+// Set the expiration for a key as a UNIX timestamp
+template<typename Key>
+auto expire_at(context& c, Key key, std::time_t timestamp) -> bool
+{
+	return reply::integer{c.command({"EXPIREAT", key, std::to_string(timestamp)})};
+}
 
-//KEYS pattern
-//Find all keys matching the given pattern
+// Find all keys matching the given pattern
+auto keys(context& c, const std::string& pattern) -> std::vector<std::string>
+{
+	auto array = reply::array{c.command({"KEYS", pattern})};
+	std::vector<std::string> keys;
+	for(auto e : array.elements)
+		keys.push_back(reply::string(e));
+	
+	return keys;
+}
 
 //MIGRATE host port key destination-db timeout [COPY] [REPLACE]
 //Atomically transfer a key from a Redis instance to another one.
@@ -201,44 +226,55 @@ auto expire(context& c, Key key, int ttl) -> bool
 //OBJECT subcommand [arguments [arguments ...]]
 //Inspect the internals of Redis objects
 
-//PERSIST key
-//Remove the expiration from a key
+// Remove the expiration from a key
 template<typename Key>
 auto persist(context& c, Key key) -> bool
 {
 	return reply::integer{c.command({"PERSIST", key})};
 }
 
-//PEXPIRE key milliseconds
-//Set a key's time to live in milliseconds
+// Set a key's time to live in milliseconds
 template<typename Key>
-auto expire_ms(context& c, Key key, int ttl) -> bool
+auto expire(context& c, Key key, std::chrono::milliseconds ttl) -> bool
 {
-	return reply::integer{c.command({"PEXPIRE", key, std::to_string(ttl)})};
+	return reply::integer{c.command({"PEXPIRE", key, std::to_string(ttl.count())})};
 }
 
-//PEXPIREAT key milliseconds-timestamp
-//Set the expiration for a key as a UNIX timestamp specified in milliseconds
-
-//PTTL key
-//Get the time to live for a key in milliseconds
+// Set the expiration for a key as a UNIX timestamp specified in milliseconds
 template<typename Key>
-auto ttl_ms(context& c, Key key) -> long long
+auto expire_at_ms(context& c, Key key, uint64_t timestamp) -> bool
+{
+	return reply::integer{c.command({"PEXPIREAT", key, std::to_string(timestamp)})};
+}
+
+// Get the time to live for a key in milliseconds
+template<typename Key>
+auto ttl_ms(context& c, Key key) -> std::chrono::milliseconds
 {
 	return reply::integer{c.command({"PTTL", key})};
 }
 
-//RANDOMKEY
-//Return a random key from the keyspace
+// Return a random key from the keyspace
+auto random(context& c) -> std::string
+{
+	return reply::string{c.command({"RANDOMKEY"})};
+}
 
-//RENAME key newkey
-//Rename a key
+// Rename a key
+template<typename Key>
+auto rename(context& c, Key key, Key newkey) -> std::string
+{
+	return reply::status{c.command({"RENAME", key, newkey})};
+}
 
-//RENAMENX key newkey
-//Rename a key, only if the new key does not exist
+// Rename a key, only if the new key does not exist
+template<typename Key>
+auto renamenx(context& c, Key key, Key newkey) -> bool
+{
+	return reply::integer{c.command({"RENAMENX", key, newkey})};
+}
 
-//RESTORE key ttl serialized-value
-//Create a key using the provided serialized value, previously obtained using DUMP.
+// Create a key using the provided serialized value, previously obtained using DUMP.
 template<typename Key>
 auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::string
 {
@@ -248,16 +284,20 @@ auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::stri
 //SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination]
 //Sort the elements in a list, set or sorted set
 
-//TTL key
-//Get the time to live for a key
+// Get the time to live for a key
 template<typename Key>
-auto ttl(context& c, Key key) -> long long
+auto ttl(context& c, Key key) -> std::chrono::seconds
 {
 	return reply::integer{c.command({"TTL", key})};
 }
 
-//TYPE key
-//Determine the type stored at key
+// Determine the type stored at key
+template<typename Key>
+auto type(context& c, Key key) -> std::string
+{
+	return reply::status{c.command({"TYPE", key})};
+}
+
 }
 
 namespace string

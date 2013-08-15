@@ -12,6 +12,14 @@ int main()
 	reply::status res = db.command({"SET", "foo", std::string(100, '*')});
 	std::cout << "res: " << res.value << "\n";
 	
+	db.command({"SET", "a", "1"});
+	db.command({"SET", "b", "1"});
+	db.command({"SET", "c", "1"});
+	db.command({"SET", "d", "1"});
+	db.command({"SET", "e", "1"});
+	db.command({"SET", "f", "1"});
+	db.command({"SET", "g", "1"});
+	
 	// With results
 	reply::string foo = db.command({"GET", "foo"});
 	std::cout << foo.value << "\n";
@@ -30,7 +38,16 @@ int main()
 	std::cout << "get(foo)   : " << string::get(db, "foo") << "\n";
 	std::cout << "get(foofoo): " << string::get(db, "foofoo") << "\n"; // nil
 	
-	key::expire(db, "foo", 1);
+	key::expire(db, "foo", std::chrono::seconds{1});
+
+	auto ks = key::keys(db, "*");
+	for(auto& k : ks)
+		std::cout << "keys: " << k << "\n";
+
+	std::cout << "random: " << key::random(db) << "\n";
+	
+	std::cout << "type(foo): " << key::type(db, "foo") << "\n";
+	std::cout << "type(a): " << key::type(db, "a") << "\n";
 
 	auto dump = key::dump(db, "foo");
 	
