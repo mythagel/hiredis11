@@ -1040,11 +1040,11 @@ public:
 	
 	bool empty()
 	{
-		return set::card(c, key) == 0;
+		return set::card(*c, key) == 0;
 	}
 	std::size_t size()
 	{
-		return set::card(c, key);
+		return set::card(*c, key);
 	}
 	
 };
