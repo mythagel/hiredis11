@@ -1031,11 +1031,22 @@ class unordered_set
 {
 private:
 	std::string key;
+	context* c;
 public:
 	unordered_set(const std::string& key)
 	 : key(key)
 	{
 	}
+	
+	bool empty()
+	{
+		return set::card(c, key) == 0;
+	}
+	std::size_t size()
+	{
+		return set::card(c, key);
+	}
+	
 };
 
 }
