@@ -7,7 +7,7 @@ int main()
 
 	auto db = context{"localhost", 6379};
 
-	// Basic API
+	// 1. Basic API
 	db.command({"GET", "foo"});
 	reply::status res = db.command({"SET", "foo", std::string(100, '*')});
 	std::cout << "res: " << res.value << "\n";
@@ -16,15 +16,41 @@ int main()
 	reply::string foo = db.command({"GET", "foo"});
 	std::cout << foo.value << "\n";
 
+
+	// 2. One step higher - wrapped functions
 	key::expire(db, "foo", 1);
 
-	// One step higher - wrapped functions
+	auto dump = key::dump(db, "foo");
+	
+	try
+	{
+		std::cout << "restore1: " << key::restore(db, "foo", 0, dump) << "\n";
+	}
+	catch(const error& e)
+	{
+		std::cout << "restore1: " << e.what() << "\n";
+	}
+	
+	key::persist(db, "foo");
+
 	if(key::exists(db, "foo"))
 		std::cout << "del: " << key::del(db, "foo") << "\n";
 	else
 		std::cout << "No key 'foo'\n";
 	
-	// Higher still - types.
+	std::cout << "restore2: " << key::restore(db, "foo", 0, dump) << "\n";
+	
+	if(key::exists(db, "foo"))
+		std::cout << "del: " << key::del(db, "foo") << "\n";
+	else
+		std::cout << "No key 'foo'\n";
+	
+	if(key::exists(db, "foo"))
+		std::cout << "del: " << key::del(db, "foo") << "\n";
+	else
+		std::cout << "No key 'foo'\n";
+	
+	// 3. Higher still - types.
 
 	return 0;
 }

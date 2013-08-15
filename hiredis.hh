@@ -37,6 +37,14 @@ private:
 		throw std::logic_error("critical_error called with no active hiredis error.");
 	}
 public:
+	struct error : std::runtime_error
+	{
+		error(const std::string& what)
+		 : std::runtime_error(what)
+		{
+		}
+	};
+
 	context(const std::string& ip, int port)
 	 : c(redisConnect(ip.c_str(), port), redisFree)
 	{
@@ -123,6 +131,9 @@ struct status
 			value = {reply->str, static_cast<size_t>(reply->len)};
 		else
 			throw std::invalid_argument("reply type not status/error.");
+		
+		if(reply->type == REDIS_REPLY_ERROR)
+			throw error(value);
 	}
 	
 	operator std::string() const
@@ -144,10 +155,10 @@ namespace key
 
 //DEL key [key ...]
 //Delete a key
-template<typename... Keys>
-auto del(context& c, Keys... keys) -> long long
+template<typename Key, typename... Keys>
+auto del(context& c, Key key, Keys... keys) -> long long
 {
-	return reply::integer{c.command({"DEL", keys...})};
+	return reply::integer{c.command({"DEL", key, keys...})};
 }
 
 //DUMP key
@@ -191,15 +202,30 @@ auto expire(context& c, Key key, int ttl) -> bool
 
 //PERSIST key
 //Remove the expiration from a key
+template<typename Key>
+auto persist(context& c, Key key) -> bool
+{
+	return reply::integer{c.command({"PERSIST", key})};
+}
 
 //PEXPIRE key milliseconds
 //Set a key's time to live in milliseconds
+template<typename Key>
+auto expire_ms(context& c, Key key, int ttl) -> bool
+{
+	return reply::integer{c.command({"PEXPIRE", key, std::to_string(ttl)})};
+}
 
 //PEXPIREAT key milliseconds-timestamp
 //Set the expiration for a key as a UNIX timestamp specified in milliseconds
 
 //PTTL key
 //Get the time to live for a key in milliseconds
+template<typename Key>
+auto ttl_ms(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"PTTL", key})};
+}
 
 //RANDOMKEY
 //Return a random key from the keyspace
@@ -212,12 +238,22 @@ auto expire(context& c, Key key, int ttl) -> bool
 
 //RESTORE key ttl serialized-value
 //Create a key using the provided serialized value, previously obtained using DUMP.
+template<typename Key>
+auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::string
+{
+	return reply::status{c.command({"RESTORE", key, std::to_string(ttl), dump})};
+}
 
 //SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC|DESC] [ALPHA] [STORE destination]
 //Sort the elements in a list, set or sorted set
 
 //TTL key
 //Get the time to live for a key
+template<typename Key>
+auto ttl(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"TTL", key})};
+}
 
 //TYPE key
 //Determine the type stored at key
