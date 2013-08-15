@@ -21,72 +21,10 @@ struct error : std::runtime_error
 	}
 };
 
-typedef std::shared_ptr<redisReply> reply_t;
-
-class context
-{
-private:
-	std::shared_ptr<redisContext> c;
-	
-	void critical_error()
-	{
-		if(c->err)
-		{
-			auto err = error(c->errstr);
-			// Context is not reusable.
-			c.reset();
-			throw err;
-		}
-		throw std::logic_error("critical_error called with no active hiredis error.");
-	}
-public:
-	struct error : std::runtime_error
-	{
-		error(const std::string& what)
-		 : std::runtime_error(what)
-		{
-		}
-	};
-
-	context(const std::string& ip, int port)
-	 : c(redisConnect(ip.c_str(), port), redisFree)
-	{
-		if(!c)
-			throw error("Unable to create context");
-		if(c->err)
-			throw error(c->errstr);
-	}
-	
-	context(const context&) = delete;
-	context& operator=(const context&) = delete;
-	
-	context(context&&) = default;
-	context& operator=(context&&) = default;
-	
-	/*
-	 Send a command and get a reply.
-	 e.g.
-	 context c;
-	 auto reply = c.command({"SET", "foo", "bar"});
-	*/
-	auto command(const std::vector<std::string>& args) -> reply_t
-	{
-		auto argc = args.size();
-		std::vector<const char*> argv(argc);
-		std::vector<size_t> argvlen(argc);
-		std::transform(begin(args), end(args), begin(argv), [](const std::string& s) -> const char* { return s.c_str(); });
-		std::transform(begin(args), end(args), begin(argvlen), [](const std::string& s) -> size_t { return s.size(); });
-	
-		auto res = redisCommandArgv(c.get(), argc, argv.data(), argvlen.data());
-		if(!res)
-			critical_error();
-	
-		return { static_cast<redisReply*>(res), freeReplyObject };
-	}
-};
-
 namespace reply
 {
+
+typedef std::shared_ptr<redisReply> reply_t;
 
 struct string
 {
@@ -167,6 +105,68 @@ bool is_nill(reply_t reply)
 }
 
 }
+
+class context
+{
+private:
+	std::shared_ptr<redisContext> c;
+	
+	void critical_error()
+	{
+		if(c->err)
+		{
+			auto err = error(c->errstr);
+			// Context is not reusable.
+			c.reset();
+			throw err;
+		}
+		throw std::logic_error("critical_error called with no active hiredis error.");
+	}
+public:
+	struct error : std::runtime_error
+	{
+		error(const std::string& what)
+		 : std::runtime_error(what)
+		{
+		}
+	};
+
+	context(const std::string& ip, int port)
+	 : c(redisConnect(ip.c_str(), port), redisFree)
+	{
+		if(!c)
+			throw error("Unable to create context");
+		if(c->err)
+			throw error(c->errstr);
+	}
+	
+	context(const context&) = delete;
+	context& operator=(const context&) = delete;
+	
+	context(context&&) = default;
+	context& operator=(context&&) = default;
+	
+	/*
+	 Send a command and get a reply.
+	 e.g.
+	 context c;
+	 auto reply = c.command({"SET", "foo", "bar"});
+	*/
+	auto command(const std::vector<std::string>& args) -> reply::reply_t
+	{
+		auto argc = args.size();
+		std::vector<const char*> argv(argc);
+		std::vector<size_t> argvlen(argc);
+		std::transform(begin(args), end(args), begin(argv), [](const std::string& s) -> const char* { return s.c_str(); });
+		std::transform(begin(args), end(args), begin(argvlen), [](const std::string& s) -> size_t { return s.size(); });
+	
+		auto res = redisCommandArgv(c.get(), argc, argv.data(), argvlen.data());
+		if(!res)
+			critical_error();
+	
+		return { static_cast<redisReply*>(res), freeReplyObject };
+	}
+};
 
 namespace key
 {
@@ -302,8 +302,13 @@ auto type(context& c, Key key) -> std::string
 
 namespace string
 {
-//APPEND key value
-//Append a value to a key
+
+// Append a value to a key
+template<typename Key, typename Value>
+auto append(context& c, Key key, Value value) -> std::string
+{
+	return reply::status{c.command({"APPEND", key, value})};
+}
 
 //BITCOUNT key [start] [end]
 //Count set bits in a string
@@ -311,14 +316,21 @@ namespace string
 //BITOP operation destkey key [key ...]
 //Perform bitwise operations between strings
 
-//DECR key
-//Decrement the integer value of a key by one
+// Decrement the integer value of a key by one
+template<typename Key>
+auto decr(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"DECR", key})};
+}
 
-//DECRBY key decrement
-//Decrement the integer value of a key by the given number
+// Decrement the integer value of a key by the given number
+template<typename Key>
+auto decr_by(context& c, Key key, long long decrement) -> long long
+{
+	return reply::integer{c.command({"DECRBY", key, std::to_string(decrement)})};
+}
 
-//GET key
-//Get the value of a key
+// Get the value of a key
 template<typename Key>
 auto get(context& c, Key key) -> boost::optional<std::string>
 {
@@ -331,17 +343,39 @@ auto get(context& c, Key key) -> boost::optional<std::string>
 //GETBIT key offset
 //Returns the bit value at offset in the string value stored at key
 
-//GETRANGE key start end
-//Get a substring of the string stored at a key
+// Get a substring of the string stored at a key
+template<typename Key>
+auto get_range(context& c, Key key, long long start, long long end) -> boost::optional<std::string>
+{
+	auto value = c.command({"GETRANGE", key, start, end});
+	if(reply::is_nill(value))
+		return {};
+	return {true, reply::string{value}};
+}
 
-//GETSET key value
-//Set the string value of a key and return its old value
+// Set the string value of a key and return its old value
+template<typename Key, typename Value>
+auto get_set(context& c, Key key, Value value) -> boost::optional<std::string>
+{
+	auto old_value = c.command({"GETSET", key, value});
+	if(reply::is_nill(old_value))
+		return {};
+	return {true, reply::string{old_value}};
+}
 
-//INCR key
-//Increment the integer value of a key by one
+// Increment the integer value of a key by one
+template<typename Key>
+auto incr(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"INCR", key})};
+}
 
-//INCRBY key increment
-//Increment the integer value of a key by the given amount
+// Increment the integer value of a key by the given amount
+template<typename Key>
+auto incr_by(context& c, Key key, long long increment) -> long long
+{
+	return reply::integer{c.command({"INCRBY", key, std::to_string(increment)})};
+}
 
 //INCRBYFLOAT key increment
 //Increment the float value of a key by the given amount
@@ -373,8 +407,13 @@ auto get(context& c, Key key) -> boost::optional<std::string>
 //SETRANGE key offset value
 //Overwrite part of a string at key starting at the specified offset
 
-//STRLEN key
-//Get the length of the value stored in a key
+// Get the length of the value stored in a key
+template<typename Key>
+auto strlen(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"STRLEN", key})};
+}
+
 }
 
 namespace hash
