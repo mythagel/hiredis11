@@ -99,6 +99,31 @@ struct array
 	}
 };
 
+struct string_array
+{
+	std::vector<std::string> value;
+	
+	string_array(reply_t reply)
+	{
+		if(reply->type == REDIS_REPLY_ARRAY)
+		{
+			std::vector<reply_t> elements;
+			elements.resize(reply->elements);
+			std::transform(reply->element, reply->element + reply->elements, begin(elements), [&reply](redisReply* r) -> reply_t { return {reply, r}; });
+			
+			for(auto& reply : elements)
+				value.push_back(string{reply});
+		}
+		else
+			throw std::invalid_argument("reply type not array.");
+	}
+	
+	operator std::vector<std::string>() const
+	{
+		return value;
+	}
+};
+
 bool is_nill(reply_t reply)
 {
 	return reply->type == REDIS_REPLY_NIL;
@@ -996,6 +1021,23 @@ auto save(context& c) -> std::string
 
 //TIME
 //Return the current server time
+}
+
+namespace types
+{
+
+template <typename T>
+class unordered_set
+{
+private:
+	std::string key;
+public:
+	unordered_set(const std::string& key)
+	 : key(key)
+	{
+	}
+};
+
 }
 
 }
