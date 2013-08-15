@@ -280,8 +280,12 @@ auto keys(context& c, const std::string& pattern) -> std::vector<std::string>
 //MIGRATE host port key destination-db timeout [COPY] [REPLACE]
 //Atomically transfer a key from a Redis instance to another one.
 
-//MOVE key db
-//Move a key to another database
+// Move a key to another database
+template<typename Key>
+auto move(context& c, Key key, int db) -> bool
+{
+	return reply::integer{c.command({"MOVE", key, std::to_string(db)})};
+}
 
 //OBJECT subcommand [arguments [arguments ...]]
 //Inspect the internals of Redis objects
@@ -437,8 +441,12 @@ auto incr_by(context& c, Key key, long long increment) -> long long
 	return reply::integer{c.command({"INCRBY", key, std::to_string(increment)})};
 }
 
-//INCRBYFLOAT key increment
-//Increment the float value of a key by the given amount
+// Increment the float value of a key by the given amount
+template<typename Key>
+auto incr_by(context& c, Key key, double increment) -> long long
+{
+	return reply::integer{c.command({"INCRBYFLOAT", key, std::to_string(increment)})};
+}
 
 //MGET key [key ...]
 //Get the values of all the given keys
@@ -452,17 +460,59 @@ auto incr_by(context& c, Key key, long long increment) -> long long
 //PSETEX key milliseconds value
 //Set the value and expiration in milliseconds of a key
 
-//SET key value [EX seconds] [PX milliseconds] [NX|XX]
-//Set the string value of a key
+// Set the string value of a key
+template<typename Key, typename Value>
+auto set(context& c, Key key, Value value) -> std::string
+{
+	return reply::status{c.command({"SET", key, value})};
+}
+template<typename Key, typename Value>
+auto set(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count())})};
+}
+template<typename Key, typename Value>
+auto set(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count())})};
+}
+
+// Set the value of a key, only if the key already exists
+template<typename Key, typename Value>
+auto setxx(context& c, Key key, Value value) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "XX"})};
+}
+template<typename Key, typename Value>
+auto setxx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count()), "XX"})};
+}
+template<typename Key, typename Value>
+auto setxx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count()), "XX"})};
+}
 
 //SETBIT key offset value
 //Sets or clears the bit at offset in the string value stored at key
 
-//SETEX key seconds value
-//Set the value and expiration of a key
-
-//SETNX key value
-//Set the value of a key, only if the key does not exist
+// Set the value of a key, only if the key does not exist
+template<typename Key, typename Value>
+auto setnx(context& c, Key key, Value value) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "NX"})};
+}
+template<typename Key, typename Value>
+auto setnx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count()), "NX"})};
+}
+template<typename Key, typename Value>
+auto setnx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+{
+	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count()), "NX"})};
+}
 
 //SETRANGE key offset value
 //Overwrite part of a string at key starting at the specified offset
