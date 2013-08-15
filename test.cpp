@@ -18,6 +18,15 @@ int main()
 
 
 	// 2. One step higher - wrapped functions
+	
+	//connection::auth(db, "a password");
+	
+	connection::select(db, 0);
+	
+	std::cout << connection::echo(db, "hello") << "\n";
+	for(int i = 0; i < 10; ++i)
+		std::cout << connection::ping(db) << "\n";
+	
 	key::expire(db, "foo", 1);
 
 	auto dump = key::dump(db, "foo");
@@ -49,6 +58,8 @@ int main()
 		std::cout << "del: " << key::del(db, "foo") << "\n";
 	else
 		std::cout << "No key 'foo'\n";
+	
+	//connection::quit(db);
 	
 	// 3. Higher still - types.
 

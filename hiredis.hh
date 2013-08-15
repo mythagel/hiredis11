@@ -545,18 +545,37 @@ namespace transaction
 {
 //DISCARD
 //Discard all commands issued after MULTI
+auto discard(context& c) -> std::string
+{
+	return reply::status{c.command({"DISCARD"})};
+}
 
 //EXEC
 //Execute all commands issued after MULTI
+// TODO array reply
 
 //MULTI
 //Mark the start of a transaction block
+auto multi(context& c) -> std::string
+{
+	return reply::status{c.command({"MULTI"})};
+}
 
 //UNWATCH
 //Forget about all watched keys
+auto unwatch(context& c) -> std::string
+{
+	return reply::status{c.command({"UNWATCH"})};
+}
 
 //WATCH key [key ...]
 //Watch the given keys to determine execution of the MULTI/EXEC block
+template<typename Key, typename... Keys>
+auto watch(context& c, Key key, Keys... keys) -> std::string
+{
+	return reply::status{c.command({"WATCH", key, keys...})};
+}
+
 }
 
 namespace script
@@ -584,18 +603,39 @@ namespace connection
 {
 //AUTH password
 //Authenticate to the server
+auto auth(context& c, const std::string& password) -> std::string
+{
+	return reply::status{c.command({"AUTH", password})};
+}
 
 //ECHO message
 //Echo the given string
+auto echo(context& c, const std::string& message) -> std::string
+{
+	return reply::string{c.command({"ECHO", message})};
+}
 
 //PING
 //Ping the server
+auto ping(context& c) -> std::string
+{
+	return reply::status{c.command({"PING"})};
+}
 
 //QUIT
 //Close the connection
+auto quit(context& c) -> std::string
+{
+	return reply::status{c.command({"QUIT"})};
+}
 
 //SELECT index
 //Change the selected database for the current connection
+auto select(context& c, int index) -> std::string
+{
+	return reply::status{c.command({"SELECT", std::to_string(index)})};
+}
+
 }
 
 namespace server
