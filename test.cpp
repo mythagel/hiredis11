@@ -4,6 +4,7 @@
 int main()
 {
 	using namespace hiredis;
+	using namespace hiredis::commands;
 
 	auto c = std::make_shared<context>("localhost", 6379);
 	auto& db = *c;
@@ -88,5 +89,15 @@ int main()
 	
 	// 3. Higher still - types.
 
+	auto set = types::unordered_set<uint64_t>(c, "testset1");
+	
+	std::cout << set.size() << "\n";
+	
+	for(int i = 0; i < 10; ++i)
+		set.insert(i, i+1, i+2, i+3, i+4);
+	
+	std::cout << "type(testset1): " << key::type(db, "testset1") << "\n";
+	std::cout << set.size() << "\n";
+	
 	return 0;
 }
