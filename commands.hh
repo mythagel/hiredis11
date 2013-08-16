@@ -574,9 +574,11 @@ auto discard(context& c) -> std::string
 	return reply::status{c.command({"DISCARD"})};
 }
 
-//EXEC
-//Execute all commands issued after MULTI
-// TODO array reply
+// Execute all commands issued after MULTI
+auto exec(context& c) -> std::vector<reply::reply_t>
+{
+	return reply::array{c.command({"EXEC"})};
+}
 
 // Mark the start of a transaction block
 auto multi(context& c) -> std::string

@@ -45,7 +45,8 @@ struct integer
 			throw std::invalid_argument("reply type not integer.");
 	}
 	
-	operator long long() const
+	template <typename T, typename=typename std::enable_if<std::is_integral<T>::value, T>::type>
+	operator T() const
 	{
 		return value;
 	}
@@ -85,6 +86,11 @@ struct array
 		}
 		else
 			throw std::invalid_argument("reply type not array.");
+	}
+	
+	operator std::vector<reply_t>() const
+	{
+		return elements;
 	}
 };
 
