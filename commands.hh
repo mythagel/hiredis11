@@ -17,41 +17,41 @@ namespace key
 
 // Delete a key
 template<typename Key, typename... Keys>
-auto del(context& c, Key key, Keys... keys) -> long long
+inline auto del(context& c, Key key, Keys... keys) -> long long
 {
 	return reply::integer{c.command({"DEL", key, keys...})};
 }
 
 // Return a serialized version of the value stored at the specified key.
 template<typename Key>
-auto dump(context& c, Key key) -> std::string
+inline auto dump(context& c, Key key) -> std::string
 {
 	return reply::string{c.command({"DUMP", key})};
 }
 
 // Determine if a key exists
 template<typename Key>
-auto exists(context& c, Key key) -> bool
+inline auto exists(context& c, Key key) -> bool
 {
 	return reply::integer{c.command({"EXISTS", key})};
 }
 
 // Set a key's time to live in seconds
 template<typename Key>
-auto expire(context& c, Key key, std::chrono::seconds ttl) -> bool
+inline auto expire(context& c, Key key, std::chrono::seconds ttl) -> bool
 {
 	return reply::integer{c.command({"EXPIRE", key, std::to_string(ttl.count())})};
 }
 
 // Set the expiration for a key as a UNIX timestamp
 template<typename Key>
-auto expire_at(context& c, Key key, std::time_t timestamp) -> bool
+inline auto expire_at(context& c, Key key, std::time_t timestamp) -> bool
 {
 	return reply::integer{c.command({"EXPIREAT", key, std::to_string(timestamp)})};
 }
 
 // Find all keys matching the given pattern
-auto keys(context& c, const std::string& pattern) -> std::vector<std::string>
+inline auto keys(context& c, const std::string& pattern) -> std::vector<std::string>
 {
 	auto array = reply::array{c.command({"KEYS", pattern})};
 	std::vector<std::string> keys;
@@ -66,7 +66,7 @@ auto keys(context& c, const std::string& pattern) -> std::vector<std::string>
 
 // Move a key to another database
 template<typename Key>
-auto move(context& c, Key key, int db) -> bool
+inline auto move(context& c, Key key, int db) -> bool
 {
 	return reply::integer{c.command({"MOVE", key, std::to_string(db)})};
 }
@@ -76,55 +76,55 @@ auto move(context& c, Key key, int db) -> bool
 
 // Remove the expiration from a key
 template<typename Key>
-auto persist(context& c, Key key) -> bool
+inline auto persist(context& c, Key key) -> bool
 {
 	return reply::integer{c.command({"PERSIST", key})};
 }
 
 // Set a key's time to live in milliseconds
 template<typename Key>
-auto expire(context& c, Key key, std::chrono::milliseconds ttl) -> bool
+inline auto expire(context& c, Key key, std::chrono::milliseconds ttl) -> bool
 {
 	return reply::integer{c.command({"PEXPIRE", key, std::to_string(ttl.count())})};
 }
 
 // Set the expiration for a key as a UNIX timestamp specified in milliseconds
 template<typename Key>
-auto expire_at_ms(context& c, Key key, uint64_t timestamp) -> bool
+inline auto expire_at_ms(context& c, Key key, uint64_t timestamp) -> bool
 {
 	return reply::integer{c.command({"PEXPIREAT", key, std::to_string(timestamp)})};
 }
 
 // Get the time to live for a key in milliseconds
 template<typename Key>
-auto ttl_ms(context& c, Key key) -> std::chrono::milliseconds
+inline auto ttl_ms(context& c, Key key) -> std::chrono::milliseconds
 {
 	return reply::integer{c.command({"PTTL", key})};
 }
 
 // Return a random key from the keyspace
-auto random(context& c) -> std::string
+inline auto random(context& c) -> std::string
 {
 	return reply::string{c.command({"RANDOMKEY"})};
 }
 
 // Rename a key
 template<typename Key>
-auto rename(context& c, Key key, Key newkey) -> std::string
+inline auto rename(context& c, Key key, Key newkey) -> std::string
 {
 	return reply::status{c.command({"RENAME", key, newkey})};
 }
 
 // Rename a key, only if the new key does not exist
 template<typename Key>
-auto renamenx(context& c, Key key, Key newkey) -> bool
+inline auto renamenx(context& c, Key key, Key newkey) -> bool
 {
 	return reply::integer{c.command({"RENAMENX", key, newkey})};
 }
 
 // Create a key using the provided serialized value, previously obtained using DUMP.
 template<typename Key>
-auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::string
+inline auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::string
 {
 	return reply::status{c.command({"RESTORE", key, std::to_string(ttl), dump})};
 }
@@ -134,14 +134,14 @@ auto restore(context& c, Key key, int ttl, const std::string& dump) -> std::stri
 
 // Get the time to live for a key
 template<typename Key>
-auto ttl(context& c, Key key) -> std::chrono::seconds
+inline auto ttl(context& c, Key key) -> std::chrono::seconds
 {
 	return reply::integer{c.command({"TTL", key})};
 }
 
 // Determine the type stored at key
 template<typename Key>
-auto type(context& c, Key key) -> std::string
+inline auto type(context& c, Key key) -> std::string
 {
 	return reply::status{c.command({"TYPE", key})};
 }
@@ -153,7 +153,7 @@ namespace string
 
 // Append a value to a key
 template<typename Key, typename Value>
-auto append(context& c, Key key, Value value) -> std::string
+inline auto append(context& c, Key key, Value value) -> std::string
 {
 	return reply::status{c.command({"APPEND", key, value})};
 }
@@ -166,21 +166,21 @@ auto append(context& c, Key key, Value value) -> std::string
 
 // Decrement the integer value of a key by one
 template<typename Key>
-auto decr(context& c, Key key) -> long long
+inline auto decr(context& c, Key key) -> long long
 {
 	return reply::integer{c.command({"DECR", key})};
 }
 
 // Decrement the integer value of a key by the given number
 template<typename Key>
-auto decr_by(context& c, Key key, long long decrement) -> long long
+inline auto decr_by(context& c, Key key, long long decrement) -> long long
 {
 	return reply::integer{c.command({"DECRBY", key, std::to_string(decrement)})};
 }
 
 // Get the value of a key
 template<typename Key>
-auto get(context& c, Key key) -> boost::optional<std::string>
+inline auto get(context& c, Key key) -> boost::optional<std::string>
 {
 	auto value = c.command({"GET", key});
 	if(reply::is_nill(value))
@@ -193,7 +193,7 @@ auto get(context& c, Key key) -> boost::optional<std::string>
 
 // Get a substring of the string stored at a key
 template<typename Key>
-auto get_range(context& c, Key key, long long start, long long end) -> boost::optional<std::string>
+inline auto get_range(context& c, Key key, long long start, long long end) -> boost::optional<std::string>
 {
 	auto value = c.command({"GETRANGE", key, start, end});
 	if(reply::is_nill(value))
@@ -203,7 +203,7 @@ auto get_range(context& c, Key key, long long start, long long end) -> boost::op
 
 // Set the string value of a key and return its old value
 template<typename Key, typename Value>
-auto get_set(context& c, Key key, Value value) -> boost::optional<std::string>
+inline auto get_set(context& c, Key key, Value value) -> boost::optional<std::string>
 {
 	auto old_value = c.command({"GETSET", key, value});
 	if(reply::is_nill(old_value))
@@ -213,21 +213,21 @@ auto get_set(context& c, Key key, Value value) -> boost::optional<std::string>
 
 // Increment the integer value of a key by one
 template<typename Key>
-auto incr(context& c, Key key) -> long long
+inline auto incr(context& c, Key key) -> long long
 {
 	return reply::integer{c.command({"INCR", key})};
 }
 
 // Increment the integer value of a key by the given amount
 template<typename Key>
-auto incr_by(context& c, Key key, long long increment) -> long long
+inline auto incr_by(context& c, Key key, long long increment) -> long long
 {
 	return reply::integer{c.command({"INCRBY", key, std::to_string(increment)})};
 }
 
 // Increment the float value of a key by the given amount
 template<typename Key>
-auto incr_by(context& c, Key key, double increment) -> long long
+inline auto incr_by(context& c, Key key, double increment) -> long long
 {
 	return reply::integer{c.command({"INCRBYFLOAT", key, std::to_string(increment)})};
 }
@@ -246,34 +246,34 @@ auto incr_by(context& c, Key key, double increment) -> long long
 
 // Set the string value of a key
 template<typename Key, typename Value>
-auto set(context& c, Key key, Value value) -> std::string
+inline auto set(context& c, Key key, Value value) -> std::string
 {
 	return reply::status{c.command({"SET", key, value})};
 }
 template<typename Key, typename Value>
-auto set(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+inline auto set(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count())})};
 }
 template<typename Key, typename Value>
-auto set(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+inline auto set(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count())})};
 }
 
 // Set the value of a key, only if the key already exists
 template<typename Key, typename Value>
-auto setxx(context& c, Key key, Value value) -> std::string
+inline auto setxx(context& c, Key key, Value value) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "XX"})};
 }
 template<typename Key, typename Value>
-auto setxx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+inline auto setxx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count()), "XX"})};
 }
 template<typename Key, typename Value>
-auto setxx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+inline auto setxx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count()), "XX"})};
 }
@@ -283,17 +283,17 @@ auto setxx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> s
 
 // Set the value of a key, only if the key does not exist
 template<typename Key, typename Value>
-auto setnx(context& c, Key key, Value value) -> std::string
+inline auto setnx(context& c, Key key, Value value) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "NX"})};
 }
 template<typename Key, typename Value>
-auto setnx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
+inline auto setnx(context& c, Key key, Value value, std::chrono::seconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "EX", std::to_string(ttl.count()), "NX"})};
 }
 template<typename Key, typename Value>
-auto setnx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
+inline auto setnx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> std::string
 {
 	return reply::status{c.command({"SET", key, value, "PX", std::to_string(ttl.count()), "NX"})};
 }
@@ -303,7 +303,7 @@ auto setnx(context& c, Key key, Value value, std::chrono::milliseconds ttl) -> s
 
 // Get the length of the value stored in a key
 template<typename Key>
-auto strlen(context& c, Key key) -> long long
+inline auto strlen(context& c, Key key) -> long long
 {
 	return reply::integer{c.command({"STRLEN", key})};
 }
@@ -315,21 +315,21 @@ namespace hash
 
 // Delete one or more hash fields
 template<typename Key, typename Field, typename... Fields>
-auto del(context& c, Key key, Field field, Fields... fields) -> long long
+inline auto del(context& c, Key key, Field field, Fields... fields) -> long long
 {
 	return reply::integer{c.command({"HDEL", key, field, fields...})};
 }
 
 // Determine if a hash field exists
 template<typename Key, typename Field>
-auto exists(context& c, Key key, Field field) -> bool
+inline auto exists(context& c, Key key, Field field) -> bool
 {
 	return reply::integer{c.command({"HEXISTS", key, field})};
 }
 
 // Get the value of a hash field
 template<typename Key, typename Field>
-auto get(context& c, Key key, Field field) -> boost::optional<std::string>
+inline auto get(context& c, Key key, Field field) -> boost::optional<std::string>
 {
 	auto value = c.command({"HGET", key, field});
 	if(reply::is_nill(value))
@@ -342,14 +342,14 @@ auto get(context& c, Key key, Field field) -> boost::optional<std::string>
 
 // Increment the integer value of a hash field by the given number
 template<typename Key, typename Field>
-auto incr_by(context& c, Key key, Field field, long long increment) -> long long
+inline auto incr_by(context& c, Key key, Field field, long long increment) -> long long
 {
 	return reply::integer{c.command({"HINCRBY", key, field, std::to_string(increment)})};
 }
 
 // Increment the float value of a hash field by the given amount
 template<typename Key, typename Field>
-auto incr_by(context& c, Key key, Field field, double increment) -> long long
+inline auto incr_by(context& c, Key key, Field field, double increment) -> long long
 {
 	return reply::integer{c.command({"HINCRBYFLOAT", key, field, std::to_string(increment)})};
 }
@@ -435,14 +435,14 @@ namespace set
 
 // Add one or more members to a set
 template<typename Key, typename Member, typename... Members>
-auto add(context& c, Key key, Member member, Members... members) -> long long
+inline auto add(context& c, Key key, Member member, Members... members) -> long long
 {
 	return reply::integer{c.command({"SADD", key, member, members...})};
 }
 
 // Get the number of members in a set
 template<typename Key>
-auto card(context& c, Key key) -> long long
+inline auto card(context& c, Key key) -> long long
 {
 	return reply::integer{c.command({"SCARD", key})};
 }
@@ -461,7 +461,7 @@ auto card(context& c, Key key) -> long long
 
 // Determine if a given value is a member of a set
 template<typename Key, typename Member>
-auto is_member(context& c, Key key, Member member) -> bool
+inline auto is_member(context& c, Key key, Member member) -> bool
 {
 	return reply::integer{c.command({"SISMEMBER", key, member})};
 }
@@ -474,7 +474,7 @@ auto is_member(context& c, Key key, Member member) -> bool
 
 // Remove and return a random member from a set
 template<typename Key>
-auto pop(context& c, Key key) -> std::string
+inline auto pop(context& c, Key key) -> std::string
 {
 	return reply::string{c.command({"SPOP", key})};
 }
@@ -484,7 +484,7 @@ auto pop(context& c, Key key) -> std::string
 
 // Remove one or more members from a set
 template<typename Key, typename Member, typename... Members>
-auto rem(context& c, Key key, Member member, Members... members) -> long long
+inline auto rem(context& c, Key key, Member member, Members... members) -> long long
 {
 	return reply::integer{c.command({"SREM", key, member, members...})};
 }
@@ -552,7 +552,7 @@ namespace pubsub
 
 // Listen for messages published to channels matching the given patterns
 template<typename Pattern, typename... Patterns>
-void psubscribe(context& c, Pattern pattern, Patterns... patterns)
+inline void psubscribe(context& c, Pattern pattern, Patterns... patterns)
 {
 	c.command({"PSUBSCRIBE", pattern, patterns...});
 }
@@ -562,28 +562,28 @@ void psubscribe(context& c, Pattern pattern, Patterns... patterns)
 
 // Post a message to a channel
 template<typename Channel, typename Message>
-auto publish(context& c, Channel channel, Message message) -> long long
+inline auto publish(context& c, Channel channel, Message message) -> long long
 {
 	return reply::integer{c.command({"PUBLISH", channel, message})};
 }
 
 // Stop listening for messages posted to channels matching the given patterns
 template<typename... Patterns>
-void punsubscribe(context& c, Patterns... patterns)
+inline void punsubscribe(context& c, Patterns... patterns)
 {
 	c.command({"PUNSUBSCRIBE", patterns...});
 }
 
 // Listen for messages published to the given channels
 template<typename Channel, typename... Channels>
-void subscribe(context& c, Channel channel, Channels... channels)
+inline void subscribe(context& c, Channel channel, Channels... channels)
 {
 	c.command({"SUBSCRIBE", channel, channels...});
 }
 
 // Stop listening for messages posted to the given channels
 template<typename... Channels>
-void unsubscribe(context& c, Channels... channels)
+inline void unsubscribe(context& c, Channels... channels)
 {
 	c.command({"UNSUBSCRIBE", channels...});
 }
@@ -593,32 +593,32 @@ namespace transaction
 {
 
 // Discard all commands issued after MULTI
-auto discard(context& c) -> std::string
+inline auto discard(context& c) -> std::string
 {
 	return reply::status{c.command({"DISCARD"})};
 }
 
 // Execute all commands issued after MULTI
-auto exec(context& c) -> std::vector<reply::reply_t>
+inline auto exec(context& c) -> std::vector<reply::reply_t>
 {
 	return reply::array{c.command({"EXEC"})};
 }
 
 // Mark the start of a transaction block
-auto multi(context& c) -> std::string
+inline auto multi(context& c) -> std::string
 {
 	return reply::status{c.command({"MULTI"})};
 }
 
 // Forget about all watched keys
-auto unwatch(context& c) -> std::string
+inline auto unwatch(context& c) -> std::string
 {
 	return reply::status{c.command({"UNWATCH"})};
 }
 
 // Watch the given keys to determine execution of the MULTI/EXEC block
 template<typename Key, typename... Keys>
-auto watch(context& c, Key key, Keys... keys) -> std::string
+inline auto watch(context& c, Key key, Keys... keys) -> std::string
 {
 	return reply::status{c.command({"WATCH", key, keys...})};
 }
@@ -650,31 +650,31 @@ namespace connection
 {
 
 // Authenticate to the server
-auto auth(context& c, const std::string& password) -> std::string
+inline auto auth(context& c, const std::string& password) -> std::string
 {
 	return reply::status{c.command({"AUTH", password})};
 }
 
 // Echo the given string
-auto echo(context& c, const std::string& message) -> std::string
+inline auto echo(context& c, const std::string& message) -> std::string
 {
 	return reply::string{c.command({"ECHO", message})};
 }
 
 // Ping the server
-auto ping(context& c) -> std::string
+inline auto ping(context& c) -> std::string
 {
 	return reply::status{c.command({"PING"})};
 }
 
 // Close the connection
-auto quit(context& c) -> std::string
+inline auto quit(context& c) -> std::string
 {
 	return reply::status{c.command({"QUIT"})};
 }
 
 // Change the selected database for the current connection
-auto select(context& c, int index) -> std::string
+inline auto select(context& c, int index) -> std::string
 {
 	return reply::status{c.command({"SELECT", std::to_string(index)})};
 }
@@ -685,13 +685,13 @@ namespace server
 {
 
 // Asynchronously rewrite the append-only file
-auto bg_rewrite_aof(context& c) -> std::string
+inline auto bg_rewrite_aof(context& c) -> std::string
 {
 	return reply::status{c.command({"BGREWRITEAOF"})};
 }
 
 // Asynchronously save the dataset to disk
-auto bg_save(context& c) -> std::string
+inline auto bg_save(context& c) -> std::string
 {
 	return reply::status{c.command({"BGSAVE"})};
 }
@@ -700,19 +700,19 @@ namespace client
 {
 
 // Kill the connection of a client
-auto kill(context& c, const std::string& address) -> std::string
+inline auto kill(context& c, const std::string& address) -> std::string
 {
 	return reply::status{c.command({"CLIENT", "KILL", address})};
 }
 
 // Get the list of client connections
-auto list(context& c) -> std::string
+inline auto list(context& c) -> std::string
 {
 	return reply::string{c.command({"CLIENT", "LIST"})};
 }
 
 // Get the current connection name
-auto get_name(context& c) -> boost::optional<std::string>
+inline auto get_name(context& c) -> boost::optional<std::string>
 {
 	auto value = c.command({"CLIENT", "GETNAME"});
 	if(reply::is_nill(value))
@@ -721,7 +721,7 @@ auto get_name(context& c) -> boost::optional<std::string>
 }
 
 // Set the current connection name
-auto set_name(context& c, const std::string& name) -> std::string
+inline auto set_name(context& c, const std::string& name) -> std::string
 {
 	return reply::status{c.command({"CLIENT", "SETNAME", name})};
 }
@@ -744,7 +744,7 @@ namespace config
 }
 
 // Return the number of keys in the selected database
-auto dbsize(context& c) -> long long
+inline auto dbsize(context& c) -> long long
 {
 	return reply::integer{c.command({"DBSIZE"})};
 }
@@ -756,29 +756,29 @@ auto dbsize(context& c) -> long long
 //Make the server crash
 
 // Remove all keys from all databases
-auto flush_all(context& c) -> std::string
+inline auto flush_all(context& c) -> std::string
 {
 	return reply::status{c.command({"FLUSHALL"})};
 }
 
 // Remove all keys from the current database
-auto flush_db(context& c) -> std::string
+inline auto flush_db(context& c) -> std::string
 {
 	return reply::status{c.command({"FLUSHDB"})};
 }
 
 // Get information and statistics about the server
-auto info(context& c) -> std::string
+inline auto info(context& c) -> std::string
 {
 	return reply::string{c.command({"INFO"})};
 }
-auto info(context& c, const std::string& section) -> std::string
+inline auto info(context& c, const std::string& section) -> std::string
 {
 	return reply::string{c.command({"INFO", section})};
 }
 
 // Get the UNIX time stamp of the last successful save to disk
-auto last_save(context& c, const std::string& section) -> time_t
+inline auto last_save(context& c, const std::string& section) -> time_t
 {
 	return reply::integer{c.command({"LASTSAVE", section})};
 }
@@ -787,7 +787,7 @@ auto last_save(context& c, const std::string& section) -> time_t
 //Listen for all requests received by the server in real time
 
 // Synchronously save the dataset to disk
-auto save(context& c) -> std::string
+inline auto save(context& c) -> std::string
 {
 	return reply::status{c.command({"SAVE"})};
 }
