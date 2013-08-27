@@ -312,23 +312,47 @@ auto strlen(context& c, Key key) -> long long
 
 namespace hash
 {
-//HDEL key field [field ...]
-//Delete one or more hash fields
 
-//HEXISTS key field
-//Determine if a hash field exists
+// Delete one or more hash fields
+template<typename Key, typename Field, typename... Fields>
+auto del(context& c, Key key, Field field, Fields... fields) -> long long
+{
+	return reply::integer{c.command({"HDEL", key, field, fields...})};
+}
 
-//HGET key field
-//Get the value of a hash field
+// Determine if a hash field exists
+template<typename Key, typename Field>
+auto exists(context& c, Key key, Field field) -> bool
+{
+	return reply::integer{c.command({"HEXISTS", key, field})};
+}
+
+// Get the value of a hash field
+template<typename Key, typename Field>
+auto get(context& c, Key key, Field field) -> boost::optional<std::string>
+{
+	auto value = c.command({"HGET", key, field});
+	if(reply::is_nill(value))
+		return {};
+	return {true, reply::string{value}};
+}
 
 //HGETALL key
 //Get all the fields and values in a hash
 
-//HINCRBY key field increment
-//Increment the integer value of a hash field by the given number
+// Increment the integer value of a hash field by the given number
+template<typename Key, typename Field>
+auto incr_by(context& c, Key key, Field field, long long increment) -> long long
+{
+	return reply::integer{c.command({"HINCRBY", key, field, std::to_string(increment)})};
+}
 
-//HINCRBYFLOAT key field increment
-//Increment the float value of a hash field by the given amount
+// Increment the float value of a hash field by the given amount
+template<typename Key, typename Field>
+auto incr_by(context& c, Key key, Field field, double increment) -> long long
+{
+	return reply::integer{c.command({"HINCRBYFLOAT", key, field, std::to_string(increment)})};
+}
 
 //HKEYS key
 //Get all the fields in a hash
