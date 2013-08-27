@@ -1,9 +1,9 @@
 hiredis11
 =========
 
-Incomplete.
+**Incomplete.**
 
-Sync interface is stable. Async doesn't exist. Wrapped commands may change with async interface.
+Sync interface is stable. Async doesn't exist. Wrapped commands may change with async interface. More commands are yet to be implemented.
 
 Basic sync interface
 --------------------
