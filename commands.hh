@@ -547,8 +547,12 @@ inline auto is_member(context& c, Key key, Member member) -> bool
 	return reply::integer{c.command({"SISMEMBER", key, member})};
 }
 
-//SMEMBERS key
-//Get all the members in a set
+// Get all the members in a set
+template<typename Key>
+inline auto members(context& c, Key key) -> std::vector<std::string>
+{
+	return reply::string_array{c.command({"SMEMBERS", key})};
+}
 
 //SMOVE source destination member
 //Move a member from one set to another
