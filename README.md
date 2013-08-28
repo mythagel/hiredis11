@@ -3,7 +3,7 @@ hiredis11
 
 **Incomplete.**
 
-Sync interface is stable. Async doesn't exist. Wrapped commands may change with async interface. More commands are yet to be implemented.
+Sync interface is stable. Async doesn't exist. Wrapped commands may change with async interface. More commands are yet to be implemented. Pipeline class doesn't work with wrapped commands.
 
 Basic sync interface
 --------------------
