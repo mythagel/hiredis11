@@ -6,6 +6,7 @@
 #include <ctime>
 #include <chrono>
 #include <vector>
+#include <map>
 #include <boost/optional.hpp>
 
 namespace hiredis
@@ -337,8 +338,19 @@ inline auto get(context& c, Key key, Field field) -> boost::optional<std::string
 	return {true, reply::string{value}};
 }
 
-//HGETALL key
-//Get all the fields and values in a hash
+// Get all the fields and values in a hash
+template<typename Key>
+inline auto get(context& c, Key key) -> std::map<std::string, std::string>
+{
+	auto value = c.command({"HGETALL", key});
+	std::vector<std::string> data = reply::string_array{value};
+	if(!data.size() % 2)
+		throw error("HGETALL result not multiple of 2");
+	std::map<std::string, std::string> res;
+	for(auto it = begin(data); it != end(data); it += 2)
+		res.insert(std::make_pair(*it, *(it+1)));
+	return res;
+}
 
 // Increment the integer value of a hash field by the given number
 template<typename Key, typename Field>
@@ -354,26 +366,71 @@ inline auto incr_by(context& c, Key key, Field field, double increment) -> long 
 	return reply::integer{c.command({"HINCRBYFLOAT", key, field, std::to_string(increment)})};
 }
 
-//HKEYS key
-//Get all the fields in a hash
+// Get all the fields in a hash
+template<typename Key>
+inline auto keys(context& c, Key key) -> std::vector<std::string>
+{
+	return reply::string_array{c.command({"HKEYS", key})};
+}
 
-//HLEN key
-//Get the number of fields in a hash
+// Get the number of fields in a hash
+template<typename Key>
+inline auto len(context& c, Key key) -> long long
+{
+	return reply::integer{c.command({"HLEN", key})};
+}
 
-//HMGET key field [field ...]
-//Get the values of all the given hash fields
+// Get the values of all the given hash fields
+template<typename Key, typename Field, typename... Fields>
+inline auto get(context& c, Key key, Field field, Fields... fields) -> std::map<std::string, std::string>
+{
+	auto value = c.command({"HMGET", key, field, fields...});
+	std::vector<std::string> keys{field, fields...};
+	
+	std::vector<reply::reply_t> data = reply::array{value};
+	if(data.size() != keys.size())
+		throw error("HMGET result not equal to key count");
+	
+	std::map<std::string, std::string> res;
+	for(std::size_t i = 0; i < keys.size(); ++i)
+	{
+		if(!reply::is_nill(data[i]))
+			res.insert(std::make_pair(keys[i], reply::string{data[i]}));
+	}
+	return res;
+}
 
-//HMSET key field value [field value ...]
-//Set multiple hash fields to multiple values
+// Set multiple hash fields to multiple values
+template<typename Key, typename Field, typename Value>
+inline auto set(context& c, Key key, const std::map<Field, Value> h) -> std::string
+{
+	std::vector<std::string> args{"HMSET", key};
+	for(auto& v : h)
+		args.insert(args.end(), {v.first, v.second});
+	return reply::status{c.command(args)};
+}
 
-//HSET key field value
-//Set the string value of a hash field
+// Set the string value of a hash field
+template<typename Key, typename Field, typename Value>
+inline auto set(context& c, Key key, Field field, Value value) -> bool
+{
+	return reply::integer{c.command({"HSET", key, field, value})};
+}
 
-//HSETNX key field value
-//Set the value of a hash field, only if the field does not exist
+// Set the value of a hash field, only if the field does not exist
+template<typename Key, typename Field, typename Value>
+inline auto setnx(context& c, Key key, Field field, Value value) -> bool
+{
+	return reply::integer{c.command({"HSETNX", key, field, value})};
+}
 
-//HVALS key
 //Get all the values in a hash
+template<typename Key>
+inline auto values(context& c, Key key) -> std::vector<std::string>
+{
+	return reply::string_array{c.command({"HVALS", key})};
+}
+
 }
 
 namespace list
