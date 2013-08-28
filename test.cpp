@@ -85,6 +85,16 @@ int main()
 	else
 		std::cout << "No key 'foo'\n";
 	
+	std::map<std::string, std::string> h;
+	h["hello"] = "world";
+	hash::set(db, "foo_hash", h);
+	std::cout << "foo_hash.hello: " << *hash::get(db, "foo_hash", "hello") << "\n";
+	
+	auto h2 = hash::get(db, "foo_hash");
+	std::cout << "h == h2: " << (h == h2) << "\n";
+	auto h3 = hash::get(db, "foo_hash", "hello", "non_existing");
+	std::cout << "h == h3: " << (h == h3) << "\n";
+	
 	//connection::quit(db);
 	
 	// 3. Higher still - types.
