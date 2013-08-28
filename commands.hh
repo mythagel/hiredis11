@@ -13,9 +13,15 @@ namespace hiredis
 {
 namespace commands
 {
+
+// #    #  ######   #   #
+// #   #   #         # #
+// ####    #####      #
+// #  #    #          #
+// #   #   #          #
+// #    #  ######     #
 namespace key
 {
-
 // Delete a key
 template<typename Key, typename... Keys>
 inline auto del(context& c, Key key, Keys... keys) -> long long
@@ -146,12 +152,16 @@ inline auto type(context& c, Key key) -> std::string
 {
 	return reply::status{c.command({"TYPE", key})};
 }
-
 }
 
+//  ####    #####  #####      #    #    #   ####
+// #          #    #    #     #    ##   #  #    #
+//  ####      #    #    #     #    # #  #  #
+//      #     #    #####      #    #  # #  #  ###
+// #    #     #    #   #      #    #   ##  #    #
+//  ####      #    #    #     #    #    #   ####
 namespace string
 {
-
 // Append a value to a key
 template<typename Key, typename Value>
 inline auto append(context& c, Key key, Value value) -> std::string
@@ -308,12 +318,16 @@ inline auto strlen(context& c, Key key) -> long long
 {
 	return reply::integer{c.command({"STRLEN", key})};
 }
-
 }
 
+// #    #    ##     ####   #    #
+// #    #   #  #   #       #    #
+// ######  #    #   ####   ######
+// #    #  ######       #  #    #
+// #    #  #    #  #    #  #    #
+// #    #  #    #   ####   #    #
 namespace hash
 {
-
 // Delete one or more hash fields
 template<typename Key, typename Field, typename... Fields>
 inline auto del(context& c, Key key, Field field, Fields... fields) -> long long
@@ -430,9 +444,14 @@ inline auto values(context& c, Key key) -> std::vector<std::string>
 {
 	return reply::string_array{c.command({"HVALS", key})};
 }
-
 }
 
+// #          #     ####    #####
+// #          #    #          #
+// #          #     ####      #
+// #          #         #     #
+// #          #    #    #     #
+// ######     #     ####      #
 namespace list
 {
 //BLPOP key [key ...] timeout
@@ -487,9 +506,14 @@ namespace list
 //Append a value to a list, only if the list exists
 }
 
+//  ####   ######   #####
+// #       #          #
+//  ####   #####      #
+//      #  #          #
+// #    #  #          #
+//  ####   ######     #
 namespace set
 {
-
 // Add one or more members to a set
 template<typename Key, typename Member, typename... Members>
 inline auto add(context& c, Key key, Member member, Members... members) -> long long
@@ -553,6 +577,12 @@ inline auto rem(context& c, Key key, Member member, Members... members) -> long 
 //Add multiple sets and store the resulting set in a key
 }
 
+//  ####    ####   #####    #####  ######  #####            ####   ######   #####
+// #       #    #  #    #     #    #       #    #          #       #          #
+//  ####   #    #  #    #     #    #####   #    #           ####   #####      #
+//      #  #    #  #####      #    #       #    #               #  #          #
+// #    #  #    #  #   #      #    #       #    #          #    #  #          #
+//  ####    ####   #    #     #    ######  #####            ####   ######     #
 namespace sorted_set
 {
 //ZADD key score member [score member ...]
@@ -604,9 +634,14 @@ namespace sorted_set
 //Add multiple sorted sets and store the resulting sorted set in a new key
 }
 
+// #####   #    #  #####    ####   #    #  #####
+// #    #  #    #  #    #  #       #    #  #    #
+// #    #  #    #  #####    ####   #    #  #####
+// #####   #    #  #    #       #  #    #  #    #
+// #       #    #  #    #  #    #  #    #  #    #
+// #        ####   #####    ####    ####   #####
 namespace pubsub
 {
-
 // Listen for messages published to channels matching the given patterns
 template<typename Pattern, typename... Patterns>
 inline void psubscribe(context& c, Pattern pattern, Patterns... patterns)
@@ -646,9 +681,14 @@ inline void unsubscribe(context& c, Channels... channels)
 }
 }
 
+//  #####  #####     ##    #    #   ####     ##     ####    #####     #     ####   #    #
+//    #    #    #   #  #   ##   #  #        #  #   #    #     #       #    #    #  ##   #
+//    #    #    #  #    #  # #  #   ####   #    #  #          #       #    #    #  # #  #
+//    #    #####   ######  #  # #       #  ######  #          #       #    #    #  #  # #
+//    #    #   #   #    #  #   ##  #    #  #    #  #    #     #       #    #    #  #   ##
+//    #    #    #  #    #  #    #   ####   #    #   ####      #       #     ####   #    #
 namespace transaction
 {
-
 // Discard all commands issued after MULTI
 inline auto discard(context& c) -> std::string
 {
@@ -679,9 +719,14 @@ inline auto watch(context& c, Key key, Keys... keys) -> std::string
 {
 	return reply::status{c.command({"WATCH", key, keys...})};
 }
-
 }
 
+//  ####    ####   #####      #    #####    #####
+// #       #    #  #    #     #    #    #     #
+//  ####   #       #    #     #    #    #     #
+//      #  #       #####      #    #####      #
+// #    #  #    #  #   #      #    #          #
+//  ####    ####   #    #     #    #          #
 namespace script
 {
 //EVAL script numkeys key [key ...] arg [arg ...]
@@ -703,9 +748,14 @@ namespace script
 //Load the specified Lua script into the script cache.
 }
 
+//  ####    ####   #    #  #    #  ######   ####    #####     #     ####   #    #
+// #    #  #    #  ##   #  ##   #  #       #    #     #       #    #    #  ##   #
+// #       #    #  # #  #  # #  #  #####   #          #       #    #    #  # #  #
+// #       #    #  #  # #  #  # #  #       #          #       #    #    #  #  # #
+// #    #  #    #  #   ##  #   ##  #       #    #     #       #    #    #  #   ##
+//  ####    ####   #    #  #    #  ######   ####      #       #     ####   #    #
 namespace connection
 {
-
 // Authenticate to the server
 inline auto auth(context& c, const std::string& password) -> std::string
 {
@@ -735,12 +785,16 @@ inline auto select(context& c, int index) -> std::string
 {
 	return reply::status{c.command({"SELECT", std::to_string(index)})};
 }
-
 }
 
+//  ####   ######  #####   #    #  ######  #####
+// #       #       #    #  #    #  #       #    #
+//  ####   #####   #    #  #    #  #####   #    #
+//      #  #       #####   #    #  #       #####
+// #    #  #       #   #    #  #   #       #   #
+//  ####   ######  #    #    ##    ######  #    #
 namespace server
 {
-
 // Asynchronously rewrite the append-only file
 inline auto bg_rewrite_aof(context& c) -> std::string
 {
@@ -755,7 +809,6 @@ inline auto bg_save(context& c) -> std::string
 
 namespace client
 {
-
 // Kill the connection of a client
 inline auto kill(context& c, const std::string& address) -> std::string
 {
@@ -782,7 +835,6 @@ inline auto set_name(context& c, const std::string& name) -> std::string
 {
 	return reply::status{c.command({"CLIENT", "SETNAME", name})};
 }
-
 }
 
 namespace config
@@ -864,6 +916,7 @@ inline auto save(context& c) -> std::string
 //TIME
 //Return the current server time
 }
+
 }
 }
 
